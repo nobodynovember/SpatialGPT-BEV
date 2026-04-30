@@ -72,7 +72,7 @@ export PYTHONPATH=$PYTHONPATH:/path/to/SpatialGPT-BEV
 bash scripts/spatialgpt-bev.sh
 ```
 
-Note: If the MatterSim module is not found when running, rebuild MatterSim with Python 3.10 to ensure compatibility with the runtime environment. For example: cmake -DEGL_RENDERING=ON .. -DPYTHON_EXECUTABLE=/root/miniconda/envs/spatialgpt-bev/bin/python
+Note: If the MatterSim module is not found at runtime, it may have been built with a different Python version. Please rebuild MatterSim with Python 3.10 to ensure compatibility. For example: cmake -DEGL_RENDERING=ON .. -DPYTHON_EXECUTABLE=/root/miniconda/envs/spatialgpt-bev/bin/python
 
 ## 📬 Contact
 

@@ -51,7 +51,7 @@ pip install -r requirements.txt
 
 1. To accelerate simulation, observation images should be pre-collected from the simulator. You can use your own saved images or use the [RGB_Observations.zip](https://connecthkuhk-my.sharepoint.com/:f:/g/personal/jadge_connect_hku_hk/Eq00RV04jXpNkwqowKh5mYABBTqBG1U2RXgQ7FvaGweJOQ?e=rL1d6p)  pre-collected in prior research work. Next, set DATA_ROOT in the spatialgpt-bev.sh file to point to the image directory.
 
-2. To construct accurate BEVs, download the full MP3D dataset for Habitat as instructed [here](https://github.com/facebookresearch/habitat-sim/blob/main/DATASETS.md#matterport3d-mp3d-dataset), and then link bevbuild/mp3d to this dataset path.
+2. To construct accurate BEVs, download the full MP3D dataset for Habitat as instructed [here](https://github.com/facebookresearch/habitat-sim/blob/main/DATASETS.md#matterport3d-mp3d-dataset), and then link bevbuild/mp3d to this dataset directory.
 
 3. For the validation unseen set in experiment, follow [DUET](https://github.com/cshizhe/VLN-DUET/) to set the [annotations](https://www.dropbox.com/sh/u3lhng7t2gq36td/AABAIdFnJxhhCg2ItpAhMtUBa?dl=0) for testing on the val-unseen split. 
 
@@ -73,25 +73,6 @@ bash scripts/spatialgpt-bev.sh
 ```
 
 Note: If the MatterSim module is not found when running, rebuild MatterSim with Python 3.10 to ensure compatibility with the runtime environment. For example: cmake -DEGL_RENDERING=ON .. -DPYTHON_EXECUTABLE=/root/miniconda/envs/spatialgpt-bev/bin/python
-
-
-## ⚙️ Key Parameters
-
-```bash
---root_dir ${DATA_ROOT}
---img_root /path/to/images
---split SpatialGPTBEV_72_scenes_processed
---end 10 # the number of cases to be tested
---output_dir ${outdir}
---max_action_len 15
---save_pred
---stop_after 3
---llm gpt-4o
---response_format json
---max_tokens 4096
-```
-
-
 
 ## 📬 Contact
 

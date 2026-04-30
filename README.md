@@ -24,7 +24,7 @@ Instruction: "Walk through the large room past the sitting areas. Go through the
 <p align="center">
   <img src="Demo_BEV.gif" width="100%">
 </p>
-From left to right: orientation FPV, near-field semantic BEV, and full-scene color BEV, where the BEVs are incrementally constructed during navigation.
+From left to right : orientation FPV, near-field semantic BEV, and full-scene color BEV, where the BEVs are incrementally constructed.
 
 
 

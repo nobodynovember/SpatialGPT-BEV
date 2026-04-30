@@ -1,0 +1,27 @@
+[2026-04-29 23:01:14] [bev process] model_server started pid=8849; waiting for models to load …
+[2026-04-29 23:01:16] [model_server pid=8849] starting … loading CLIP + LSeg models
+[2026-04-29 23:01:16] [model_server pid=8849] loading CLIP model for text features …
+[2026-04-29 23:01:17] [model_server pid=8849] loading LSeg model …
+[2026-04-29 23:01:22] [model_server pid=8849] models loaded dt=6.249s labels=40 clip_feat_dim=512
+[2026-04-29 23:01:22] [bev process] model_server ready (pid=8849)
+[2026-04-29 23:01:31] [bev process] worker switched old_pid=None -> new_pid=8971 reason=worker_missing scan=VLzqgDo317F restart_count=1
+[2026-04-29 23:01:33] [bev worker 8971] start BEV build scan=VLzqgDo317F viewpoint=af3af33b0120469c9a00daa0d0b36799
+[2026-04-29 23:01:55] [bev worker 8971] finish BEV build scan=VLzqgDo317F viewpoint=af3af33b0120469c9a00daa0d0b36799 dt=22.608s
+[2026-04-29 23:02:05] [bev worker 8971] start BEV build scan=VLzqgDo317F viewpoint=5be145994f974347850a48cecd04cdcd
+[2026-04-29 23:02:22] [bev worker 8971] finish BEV build scan=VLzqgDo317F viewpoint=5be145994f974347850a48cecd04cdcd dt=17.135s
+[2026-04-29 23:02:43] [bev worker 8971] start BEV build scan=VLzqgDo317F viewpoint=79aedad1206b4eea9c4b639ea2182eb7
+[2026-04-29 23:03:14] [bev worker 8971] finish BEV build scan=VLzqgDo317F viewpoint=79aedad1206b4eea9c4b639ea2182eb7 dt=31.520s
+[2026-04-29 23:03:38] [bev worker 8971] start BEV build scan=VLzqgDo317F viewpoint=1c91ed40af2246f2b126dd0f661970df
+[2026-04-29 23:04:11] [bev worker 8971] finish BEV build scan=VLzqgDo317F viewpoint=1c91ed40af2246f2b126dd0f661970df dt=32.784s
+[2026-04-29 23:04:31] [bev worker 8971] start BEV build scan=VLzqgDo317F viewpoint=385019f5d018430fa233d483b253076c
+[2026-04-29 23:04:48] [bev worker 8971] finish BEV build scan=VLzqgDo317F viewpoint=385019f5d018430fa233d483b253076c dt=17.155s
+[2026-04-29 23:07:15] [bev process] model_server started pid=9105; waiting for models to load …
+[2026-04-29 23:07:17] [model_server pid=9105] starting … loading CLIP + LSeg models
+[2026-04-29 23:07:17] [model_server pid=9105] loading CLIP model for text features …
+[2026-04-29 23:07:19] [model_server pid=9105] loading LSeg model …
+[2026-04-29 23:07:23] [model_server pid=9105] models loaded dt=6.121s labels=40 clip_feat_dim=512
+[2026-04-29 23:07:23] [bev process] model_server ready (pid=9105)
+[2026-04-29 23:07:32] [bev process] worker switched old_pid=None -> new_pid=9227 reason=worker_missing scan=VLzqgDo317F restart_count=1
+[2026-04-29 23:07:34] [bev worker 9227] start BEV build scan=VLzqgDo317F viewpoint=af3af33b0120469c9a00daa0d0b36799
+[2026-04-29 23:08:02] [bev worker 9227] finish BEV build scan=VLzqgDo317F viewpoint=af3af33b0120469c9a00daa0d0b36799 dt=27.153s
+[2026-04-29 23:08:12] [bev worker 9227] start BEV build scan=VLzqgDo317F viewpoint=5be145994f974347850a48cecd04cdcd

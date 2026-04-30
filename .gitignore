@@ -1,0 +1,7 @@
+/datasets/
+/data/
+/mp3d/
+*.ckpt
+__pycache__/
+*.pyc
+*.pyo

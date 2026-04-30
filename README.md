@@ -20,11 +20,11 @@ Key Features:
 
 
 ## 🎬 Demo of BEV Construction (Fast Playback)
-
+Instruction: "Walk through the large room past the sitting areas. Go through the door left of the tapestry and enter a wood paneled room with a circle table in the middle. Go up the stairs and stop on the sixth step from the bottom."
 <p align="center">
   <img src="Demo_BEV.gif" width="100%">
 </p>
-|------------------Orientation FPV-----------------|------Near-Field Semantic BEV----|-------Full-Scene Color BEV---------|
+Orientation FPV (Left) | Near-Field Semantic BEV (Middle) | Full-Scene Color BEV (Right)
 
 
 
@@ -72,7 +72,7 @@ export PYTHONPATH=$PYTHONPATH:/path/to/SpatialGPT-BEV
 bash scripts/spatialgpt-bev.sh
 ```
 
-Note: If the MatterSim module is not found at runtime, it may have been built with a different Python version. Please rebuild MatterSim with Python 3.10 to ensure compatibility. For example: cmake -DEGL_RENDERING=ON .. -DPYTHON_EXECUTABLE=/root/miniconda/envs/spatialgpt-bev/bin/python
+Note: If the MatterSim module is not found at runtime, it may have been built with a different Python version. Please rebuild MatterSim with Python 3.10 to ensure compatibility. 
 
 ## 📬 Contact
 

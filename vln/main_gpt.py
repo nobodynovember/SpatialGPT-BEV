@@ -11,6 +11,12 @@ from utils.data import set_random_seed
 from utils.logger import write_to_record_file
 
 from vln.gpt_agent import GPTNavAgent
+from utils.computation_cost import start_session
+from scripts.summarize_computation_cost import build_report, load_events
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+COST_LOG = os.path.join(PROJECT_ROOT, "computation_cost.log")
+COST_REPORT = os.path.join(PROJECT_ROOT, "computation_cost_response.md")
 
 def build_dataset(args, rank=0, is_test=True):
     # feat_db = ImageObservationsDB(args.obs_dir, args.obs_summary_dir, args.obj_dir) 
@@ -80,6 +86,10 @@ def valid(args, val_envs, rank=0):
         agent.test(args=args)
         print('spatial gpt finished...')
         print(env_name, 'cost time: %.2fs' % (time.time() - start_time))
+        cost_report = build_report(load_events(COST_LOG))
+        with open(COST_REPORT, "w", encoding="utf-8") as outf:
+            outf.write(cost_report)
+        print(cost_report)
         preds = agent.get_results(detailed_output=args.detailed_output)
 
         if default_gpu:
@@ -100,6 +110,7 @@ def valid(args, val_envs, rank=0):
 
 def main():
     args = parse_args()
+    start_session(COST_LOG, reset=True)
     set_random_seed(args.seed)
     val_envs = build_dataset(args)
     valid(args, val_envs)

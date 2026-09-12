@@ -8,6 +8,7 @@ import zmq
 
 from bevbuilder.utils.create_map import CreateMap
 from bevbuilder.utils.model_server import model_server_loop
+from utils.computation_cost import timed_module
 
 
 ENDPOINT = "tcp://*:5555"
@@ -82,7 +83,9 @@ def _worker_loop(child_conn, model_req_q, model_resp_q):
         req_t0 = time.perf_counter()
         try:
             _proc_log(f"[bev worker {os.getpid()}] start BEV build scan={scan} viewpoint={viewpoint}")
-            bevbuilder.create_lseg_map_multiview(scan, viewpoint, heading, elevation, LX, LY, LZ, is_reverie=is_reverie)
+            with timed_module("bev_build", scan=scan, viewpoint=viewpoint,
+                              navigation_step=task.get("navigation_step")):
+                bevbuilder.create_lseg_map_multiview(scan, viewpoint, heading, elevation, LX, LY, LZ, is_reverie=is_reverie)
             dt = time.perf_counter() - req_t0
             _proc_log(f"[bev worker {os.getpid()}] finish BEV build scan={scan} viewpoint={viewpoint} dt={dt:.3f}s")
             child_conn.send({"ok": True, "dt": dt})
@@ -236,6 +239,7 @@ class WorkerManager:
                 "LY": msg.get("LY"),
                 "LZ": msg.get("LZ"),
                 "is_reverie": msg.get("is_reverie", False),
+                "navigation_step": msg.get("navigation_step"),
             })
         except Exception as e:
             return {"ok": False, "err": f"worker_send_failed: {e}"}

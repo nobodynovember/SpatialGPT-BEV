@@ -1,6 +1,8 @@
 from openai import OpenAI
 import base64
 import os
+import time
+from utils.computation_cost import record_gpt_call
 
 from tenacity import (
     retry,
@@ -17,7 +19,19 @@ client = OpenAI(
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
 def completion_with_backoff(**kwargs):
-    return client.chat.completions.create(**kwargs)
+    cost_context = kwargs.pop("_cost_context", {})
+    start = time.perf_counter()
+    try:
+        response = client.chat.completions.create(**kwargs)
+    except Exception as exc:
+        record_gpt_call(time.perf_counter() - start, None,
+                        str(kwargs.get("model", "unknown")),
+                        int(cost_context.get("image_count", 0)), False, str(exc))
+        raise
+    record_gpt_call(time.perf_counter() - start, response.usage,
+                    str(kwargs.get("model", "unknown")),
+                    int(cost_context.get("image_count", 0)))
+    return response
 
 
 def gpt_infer(system, text, image_list, model="gpt-4-vision-preview", max_tokens=600, response_format=None, defined_indice=None): 
@@ -76,15 +90,14 @@ def gpt_infer(system, text, image_list, model="gpt-4-vision-preview", max_tokens
     
     if response_format:
         # chat_message = completion_with_backoff(model=model, messages=messages, temperature=0, max_tokens=max_tokens, response_format=response_format)
-        chat_message = completion_with_backoff(model=model, messages=messages, temperature=0, response_format=response_format)
+        chat_message = completion_with_backoff(model=model, messages=messages, temperature=0, response_format=response_format, _cost_context={"image_count": len(image_list)})
     else:
         # chat_message = completion_with_backoff(model=model, messages=messages, temperature=0, max_tokens=max_tokens)
-        chat_message = completion_with_backoff(model=model, messages=messages, temperature=0)
+        chat_message = completion_with_backoff(model=model, messages=messages, temperature=0, _cost_context={"image_count": len(image_list)})
 
     #print('gpt chat_message:', chat_message)
     answer = chat_message.choices[0].message.content
     tokens = chat_message.usage
 
     return answer, tokens
-
 

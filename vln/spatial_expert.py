@@ -8,12 +8,14 @@ import networkx as nx
 import json
 import re
 import torch
+import time
 
 
 # removed zmq-based BEV IPC; use in-process BEV manager
 from bevbuilder.bev_process import start_bev_manager, stop_bev_manager
 # import cv2
 from GPT.api import gpt_infer
+from utils.computation_cost import computation_phase, log_event, timed_module
 
 class SpatialExpert:
     def __init__(self, args, env, prompt_manager):
@@ -169,6 +171,7 @@ class SpatialExpert:
     
     # record visual observations in spatial knowledge graph
     def spatial_representation(self, obs, t, env):
+        dcll_skg_t0 = time.perf_counter()
         def _loc_distance(loc):
             return np.sqrt(loc.rel_heading ** 2 + loc.rel_elevation ** 2)        
         
@@ -269,8 +272,10 @@ class SpatialExpert:
                 image_list.append(img_path)               
 
             if self.args.response_format == 'json':
-                nav_output, tokens = gpt_infer(prompt_system, prompt_user, image_list,
-                                            self.args.llm, self.args.max_tokens, response_format={"type": "json_object"})
+                with computation_phase("dcll_skg_update", scan=ob["scan"],
+                                       viewpoint=ob["viewpoint"], navigation_step=t):
+                    nav_output, tokens = gpt_infer(prompt_system, prompt_user, image_list,
+                                                self.args.llm, self.args.max_tokens, response_format={"type": "json_object"})
                 # print("Debug: nav_output content before parsing:", nav_output)                
                 json_out =json.loads(nav_output)
                 # estimate_distance=json_out['stop_distance']
@@ -363,6 +368,11 @@ class SpatialExpert:
         except Exception as e:
             print(f"Warning: record_all_nodes failed: {e}")
 
+        log_event("module", module="dcll_skg_update", scan=ob["scan"],
+                  viewpoint=ob["viewpoint"], navigation_step=t,
+                  wall_clock_seconds=time.perf_counter() - dcll_skg_t0,
+                  success=True)
+
         # notify bev app to build bev map
 
         try:
@@ -370,9 +380,9 @@ class SpatialExpert:
         except Exception:
             is_reverie = False
         if t == 0:
-            msg = {"type": "reset", "scan": ob['scan'], "viewpoint": ob['viewpoint'], "heading": new_state.heading, "elevation": new_state.elevation, "LX": new_state.location.x, "LY": new_state.location.y, "LZ": new_state.location.z, "is_reverie": is_reverie}
+            msg = {"type": "reset", "scan": ob['scan'], "viewpoint": ob['viewpoint'], "heading": new_state.heading, "elevation": new_state.elevation, "LX": new_state.location.x, "LY": new_state.location.y, "LZ": new_state.location.z, "is_reverie": is_reverie, "navigation_step": t}
         else:
-            msg = {"type": "step", "scan": ob['scan'], "viewpoint": ob['viewpoint'], "heading": new_state.heading, "elevation": new_state.elevation, "LX": new_state.location.x, "LY": new_state.location.y, "LZ": new_state.location.z, "is_reverie": is_reverie}
+            msg = {"type": "step", "scan": ob['scan'], "viewpoint": ob['viewpoint'], "heading": new_state.heading, "elevation": new_state.elevation, "LX": new_state.location.x, "LY": new_state.location.y, "LZ": new_state.location.z, "is_reverie": is_reverie, "navigation_step": t}
         print('Requesting BEV build in-process:', msg)
         if self.bev_manager is None:
             raise RuntimeError("BEV manager not initialized")
@@ -559,6 +569,8 @@ class SpatialExpert:
   
     #     return matched_nodelist
     def GPT_front_landmark_aligned(self, instru_step, ob,t): 
+        align_t0 = time.perf_counter()
+        nested_backtrack_seconds = 0.0
         def sort_candidates_elevation(candidate_list):
             sorted_list = sorted(candidate_list, key=lambda x: x['elevation'])
             return sorted_list
@@ -631,8 +643,10 @@ class SpatialExpert:
             image_list.append(img_path) 
    
         if self.args.response_format == 'json':
-            nav_output, tokens = gpt_infer(prompt_system, prompt_user, image_list,
-                                        self.args.llm, self.args.max_tokens, response_format={"type": "json_object"})
+            with computation_phase("align", scan=ob["scan"],
+                                   viewpoint=ob["viewpoint"], navigation_step=t):
+                nav_output, tokens = gpt_infer(prompt_system, prompt_user, image_list,
+                                            self.args.llm, self.args.max_tokens, response_format={"type": "json_object"})
             reason_result = json.loads(nav_output)
         # print('reason_result:', reason_result)  
         down_reason_result=None
@@ -652,8 +666,10 @@ class SpatialExpert:
                 image_list.append(img_path)
            
             if self.args.response_format == 'json':
-                nav_output, tokens = gpt_infer(prompt_system, prompt_user, image_list,
-                                            self.args.llm, self.args.max_tokens, response_format={"type": "json_object"})
+                with computation_phase("align", scan=ob["scan"],
+                                       viewpoint=ob["viewpoint"], navigation_step=t):
+                    nav_output, tokens = gpt_infer(prompt_system, prompt_user, image_list,
+                                                self.args.llm, self.args.max_tokens, response_format={"type": "json_object"})
                 down_reason_result = json.loads(nav_output)
 
         # print('Agent Orientation:', self.current_viewIndex)
@@ -788,7 +804,9 @@ class SpatialExpert:
                 print('[Reverie instruction] initiates bev align')
                 # reflect_result = None  # Reverie-specific: skip reflect and force frontier
                 # self.frontier_flag=True
-                bev_result=self.bev_align(ob)
+                with computation_phase("align", scan=ob["scan"],
+                                       viewpoint=ob["viewpoint"], navigation_step=t):
+                    bev_result=self.bev_align(ob)
                 if bev_result is not None:
                     matched_nodelist.clear()
                     matched_nodelist.append(bev_result)   
@@ -808,14 +826,24 @@ class SpatialExpert:
                 if candidate['viewpointId'] in traj_nodes:
                     # print('[Backtrack Plan due to Circle Found]')                       
                     # go to reflect for out of circle
-                    reflect_result=self.reflect(ob)
+                    backtrack_t0 = time.perf_counter()
+                    with timed_module("backtrack", scan=ob["scan"],
+                                      viewpoint=ob["viewpoint"], navigation_step=t,
+                                      subtype="reflect"):
+                        reflect_result=self.reflect(ob)
+                    nested_backtrack_seconds += time.perf_counter() - backtrack_t0
                     if reflect_result is not None:
                         matched_nodelist.clear()
                         matched_nodelist.append(reflect_result)
                     else:
                         print('Frontier Inference due to no alternative node')
                         if self.frontier_flag==True:
-                            frontier_result=self.frontier(ob)
+                            backtrack_t0 = time.perf_counter()
+                            with timed_module("backtrack", scan=ob["scan"],
+                                              viewpoint=ob["viewpoint"], navigation_step=t,
+                                              subtype="frontier"):
+                                frontier_result=self.frontier(ob)
+                            nested_backtrack_seconds += time.perf_counter() - backtrack_t0
                             if frontier_result is not None:
                                 matched_nodelist.clear()
                                 matched_nodelist.append(frontier_result)            
@@ -971,8 +999,10 @@ class SpatialExpert:
             # print('number of images for stop decision:', len(image_list))
             bev_distance=100.0
             if self.args.response_format == 'json':
-                    nav_output, tokens = gpt_infer(prompt_system, prompt_user, image_list,
-                                                self.args.llm, self.args.max_tokens, response_format={"type": "json_object"})
+                    with computation_phase("align", scan=ob["scan"],
+                                           viewpoint=ob["viewpoint"], navigation_step=t):
+                        nav_output, tokens = gpt_infer(prompt_system, prompt_user, image_list,
+                                                    self.args.llm, self.args.max_tokens, response_format={"type": "json_object"})
                     stop_result = json.loads(nav_output)
                     # print('stop_result:', stop_result)
                     # try:
@@ -1096,6 +1126,10 @@ class SpatialExpert:
             print('Closing to Destination, Agent is Stopping...')  
 
 
+        log_event("module", module="align", scan=ob["scan"],
+                  viewpoint=ob["viewpoint"], navigation_step=t,
+                  wall_clock_seconds=max(0.0, time.perf_counter() - align_t0 - nested_backtrack_seconds),
+                  success=True)
         return matched_nodelist
     
 
@@ -1308,7 +1342,12 @@ class SpatialExpert:
                     # print('forward step continue+1:', self.current_instru_step)         
         return selected_node
     
-    def synchronize_reasoning(self, ob, t):    
+    def synchronize_reasoning(self, ob, t):
+        with timed_module("synchronize", scan=ob["scan"],
+                          viewpoint=ob["viewpoint"], navigation_step=t):
+            return self._synchronize_reasoning(ob, t)
+
+    def _synchronize_reasoning(self, ob, t):
         def convert_dcel_area_to_text(dcel_area: dict) -> str:
             
             directions_text = []
@@ -1483,7 +1522,10 @@ class SpatialExpert:
         #check alternative stop 
         # if t>9 and self.stopping==False and len(self.stop_alternative_list)>0:
         if t>9 and self.stopping==False:
-            alternative_node=self.check_alternative_stop(ob)
+            with timed_module("backtrack", scan=ob["scan"],
+                              viewpoint=ob["viewpoint"], navigation_step=t,
+                              subtype="alternative_stop"):
+                alternative_node=self.check_alternative_stop(ob)
             if alternative_node is not None:
                 selected_node=alternative_node
         #end check alternative stop
@@ -1616,4 +1658,3 @@ class SpatialExpert:
                 print('No valid path to the selected alternative viewpoint or already at the alternative viewpoint.')
         
         return selected_node
-

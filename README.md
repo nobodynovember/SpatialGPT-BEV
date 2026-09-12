@@ -62,7 +62,7 @@ pip install -r requirements.txt
 
 ## 🔑 Set OpenAI API Key
 
-Fill in your API key at Line 12 of the file: GPT/api.py. 
+Fill in your API key at Line 14 of the file: GPT/api.py. 
 
 
 ## ▶️ Run SpatialGPT-BEV
